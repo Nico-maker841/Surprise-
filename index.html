@@ -3,46 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎉 SURPRISE DE GROK 🎉</title>
+    <title>🚨 ULTIMATE SURPRISE GROK MODE ACTIVATED 🚨</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Creepster&display=swap');
 
         body {
             margin: 0;
             padding: 0;
             overflow: hidden;
             background: #000;
-            font-family: 'Press Start 2P', system-ui;
             color: #fff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            font-family: 'Press Start 2P', system-ui;
             height: 100vh;
             position: relative;
+            cursor: crosshair;
         }
 
-        h1 {
-            font-size: 4.5rem;
-            text-align: center;
+        .glitch {
+            font-family: 'Creepster', cursive;
+            font-size: 5.5rem;
+            position: absolute;
+            top: 15%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             text-shadow: 
-                0 0 20px #ff00ff,
-                0 0 40px #00ffff,
-                0 0 60px #ffff00;
-            animation: glow 1.5s infinite alternate;
-            z-index: 10;
+                0 0 10px #ff00ff,
+                0 0 20px #00ffff,
+                0 0 30px #ffff00,
+                2px 2px 0 #ff0000,
+                -2px -2px 0 #00ff00;
+            animation: glitch 0.4s infinite, colorShift 3s infinite;
+            z-index: 20;
             pointer-events: none;
-            margin: 0;
-            line-height: 1;
+            white-space: nowrap;
         }
 
-        p {
-            font-size: 1.2rem;
-            margin-top: 20px;
-            text-shadow: 0 0 15px #00ff00;
-            z-index: 10;
+        @keyframes glitch {
+            0% { transform: translate(-50%, -50%) skew(0deg); }
+            10% { transform: translate(-50% -5px, -50% +5px) skew(10deg); }
+            20% { transform: translate(-50% +5px, -50% -5px) skew(-10deg); }
+            30% { transform: translate(-50%, -50%); }
+        }
+
+        @keyframes colorShift {
+            0%, 100% { color: #ff00ff; }
+            33% { color: #00ffff; }
+            66% { color: #ffff00; }
+        }
+
+        .message {
+            position: absolute;
+            font-size: 1.8rem;
+            padding: 15px 30px;
+            background: rgba(0,0,0,0.85);
+            border: 4px solid #00ff00;
+            box-shadow: 0 0 30px #00ff00;
+            z-index: 30;
             pointer-events: none;
-            opacity: 0.9;
+            opacity: 0;
+            transition: all 0.6s;
+            text-align: center;
+            max-width: 80%;
         }
 
         canvas {
@@ -52,140 +73,149 @@
             z-index: 1;
         }
 
-        @keyframes glow {
-            from { text-shadow: 0 0 20px #ff00ff, 0 0 40px #00ffff; }
-            to { text-shadow: 0 0 40px #ffff00, 0 0 80px #ff00ff; }
-        }
-
         .warning {
             position: absolute;
-            bottom: 30px;
+            bottom: 20px;
             font-size: 0.9rem;
-            opacity: 0.6;
-            z-index: 10;
+            opacity: 0.5;
+            z-index: 40;
+            text-align: center;
+            width: 100%;
+        }
+
+        .secret {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 0.7rem;
+            opacity: 0.3;
+            z-index: 50;
         }
     </style>
 </head>
 <body>
-    <h1>SURPRISE !</h1>
-    <p>Clique N'IMPORTE OÙ pour faire exploser encore plus de confettis !</p>
+    <h1 class="glitch" id="title">SURPRISE !!!</h1>
     <canvas id="canvas"></canvas>
-    <div class="warning">Prépare-toi… Grok t'a piégé 😈</div>
+    <div class="warning">CLIQUE PARTOUT • APPUIE SUR ESPACE • BOUGE LA SOURIS • GROK EST EN MODE CHAOS TOTAL 😈</div>
+    <div class="secret">Appuie sur 'G' pour le mode GROK SECRET</div>
 
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        
-        let width = canvas.width = window.innerWidth;
-        let height = canvas.height = window.innerHeight;
-        
+        let w = canvas.width = window.innerWidth;
+        let h = canvas.height = window.innerHeight;
+
         window.addEventListener('resize', () => {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
+            w = canvas.width = window.innerWidth;
+            h = canvas.height = window.innerHeight;
         });
 
         let particles = [];
+        let fireworks = [];
+        let emojis = [];
+        let messages = [];
+        let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        class Confetti {
-            constructor(x, y) {
-                this.x = x;
-                this.y = y;
-                this.size = Math.random() * 12 + 6;
-                this.speedX = Math.random() * 12 - 6;
-                this.speedY = Math.random() * -18 - 10;
-                this.gravity = 0.18;
-                this.color = `hsl(${Math.random() * 360}, 100%, 65%)`;
+        class Particle {
+            constructor(x, y, type) {
+                this.x = x; this.y = y;
+                this.type = type;
+                this.size = Math.random() * 14 + 7;
+                this.vx = Math.random() * 14 - 7;
+                this.vy = Math.random() * -22 - 8;
+                this.gravity = 0.25;
+                this.color = `hsl(${Math.random()*360},100%,70%)`;
+                this.life = 100;
                 this.rotation = Math.random() * 360;
-                this.rotationSpeed = Math.random() * 14 - 7;
-                this.opacity = 1;
-                this.shape = Math.random() > 0.5 ? 'rect' : 'circle';
+                this.rotSpeed = Math.random() * 20 - 10;
             }
-
             update() {
-                this.speedY += this.gravity;
-                this.x += this.speedX;
-                this.y += this.speedY;
-                this.rotation += this.rotationSpeed;
-                this.opacity -= 0.008;
+                this.vy += this.gravity;
+                this.x += this.vx;
+                this.y += this.vy;
+                this.rotation += this.rotSpeed;
+                this.life -= 1.8;
             }
-
             draw() {
                 ctx.save();
-                ctx.globalAlpha = this.opacity;
+                ctx.globalAlpha = this.life / 100;
                 ctx.translate(this.x, this.y);
                 ctx.rotate(this.rotation * Math.PI / 180);
-
                 ctx.fillStyle = this.color;
-                if (this.shape === 'rect') {
-                    ctx.fillRect(-this.size / 2, -this.size / 3, this.size, this.size * 0.6);
+                if (this.type === 'confetti') {
+                    ctx.fillRect(-this.size/2, -this.size/2, this.size, this.size/2);
                 } else {
                     ctx.beginPath();
-                    ctx.arc(0, 0, this.size / 2, 0, Math.PI * 2);
+                    ctx.arc(0, 0, this.size/2, 0, Math.PI*2);
                     ctx.fill();
                 }
                 ctx.restore();
             }
         }
 
-        function createExplosion(x, y, count) {
-            for (let i = 0; i < count; i++) {
-                particles.push(new Confetti(x, y));
+        class Firework {
+            constructor(x, y) {
+                this.x = x; this.y = y;
+                this.vy = Math.random() * -18 - 22;
+                this.exploded = false;
+                this.particles = [];
+                this.color = `hsl(${Math.random()*360},100%,60%)`;
             }
-        }
-
-        function animate() {
-            // Effet de traînée magique
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
-            ctx.fillRect(0, 0, width, height);
-
-            for (let i = particles.length - 1; i >= 0; i--) {
-                const p = particles[i];
-                p.update();
-                p.draw();
-
-                if (p.y > height + 50 || p.opacity <= 0) {
-                    particles.splice(i, 1);
+            update() {
+                if (!this.exploded) {
+                    this.y += this.vy;
+                    this.vy += 0.4;
+                    if (this.vy >= 0) {
+                        this.explode();
+                    }
+                } else {
+                    for (let i = this.particles.length-1; i >= 0; i--) {
+                        const p = this.particles[i];
+                        p.update();
+                        if (p.life <= 0) this.particles.splice(i,1);
+                    }
                 }
             }
-
-            requestAnimationFrame(animate);
+            explode() {
+                this.exploded = true;
+                playBoom(80, 120);
+                for (let i = 0; i < 85; i++) {
+                    const p = new Particle(this.x, this.y, 'spark');
+                    p.vx = Math.random()*22 - 11;
+                    p.vy = Math.random()*22 - 18;
+                    p.gravity = 0.15;
+                    p.life = 65;
+                    this.particles.push(p);
+                }
+            }
+            draw() {
+                if (!this.exploded) {
+                    ctx.fillStyle = '#fff';
+                    ctx.shadowBlur = 30;
+                    ctx.shadowColor = this.color;
+                    ctx.fillRect(this.x-4, this.y-4, 8, 8);
+                } else {
+                    this.particles.forEach(p => p.draw());
+                }
+            }
         }
 
-        // Lancement initial EXPLOSIF
-        setTimeout(() => {
-            createExplosion(width / 2, height / 2.5, 420);
-            // Deuxième explosion décalée pour le WOW
-            setTimeout(() => createExplosion(width * 0.3, height / 2, 180), 180);
-            setTimeout(() => createExplosion(width * 0.7, height / 2, 180), 320);
-        }, 420);
-
-        // Clique = BOOM !
-        document.addEventListener('click', (e) => {
-            createExplosion(e.clientX, e.clientY, 220);
-            
-            // Effet bonus : petite explosion aléatoire à côté
-            if (Math.random() > 0.6) {
-                setTimeout(() => {
-                    createExplosion(e.clientX + (Math.random() * 200 - 100), 
-                                  e.clientY + (Math.random() * 150 - 50), 90);
-                }, 80);
+        class EmojiParticle {
+            constructor() {
+                this.x = Math.random() * w;
+                this.y = -50;
+                this.emoji = ['🎉','🔥','🚀','😱','💥','🦄','🌈','👽','🍕','🕹️'][Math.floor(Math.random()*10)];
+                this.size = Math.random() * 35 + 25;
+                this.vy = Math.random() * 5 + 3;
+                this.vx = Math.random() * 4 - 2;
+                this.life = 180;
             }
-        });
-
-        // Petits confettis automatiques pour ne jamais s'arrêter
-        setInterval(() => {
-            if (Math.random() > 0.4) {
-                const x = Math.random() * width;
-                createExplosion(x, Math.random() * height * 0.3, 35);
+            update() {
+                this.y += this.vy;
+                this.x += this.vx;
+                this.vy += 0.08;
+                this.life--;
             }
-        }, 1100);
-
-        // Démarrage de l'animation
-        animate();
-
-        // Message secret dans la console (pour les curieux)
-        console.log('%c🎉 GROK t\'a bien eu hein ? Tu croyais que ce serait juste du texte ? 😏', 
-                    'color:#00ff00; font-family:monospace; font-size:14px;');
-    </script>
-</body>
-</html>
+            draw() {
+                ctx.font = `${this.size}px Arial`;
+                ctx.global
