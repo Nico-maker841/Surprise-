@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎉 SURPRISE DE GROK 🎉</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+            font-family: 'Press Start 2P', system-ui;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 4.5rem;
+            text-align: center;
+            text-shadow: 
+                0 0 20px #ff00ff,
+                0 0 40px #00ffff,
+                0 0 60px #ffff00;
+            animation: glow 1.5s infinite alternate;
+            z-index: 10;
+            pointer-events: none;
+            margin: 0;
+            line-height: 1;
+        }
+
+        p {
+            font-size: 1.2rem;
+            margin-top: 20px;
+            text-shadow: 0 0 15px #00ff00;
+            z-index: 10;
+            pointer-events: none;
+            opacity: 0.9;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 20px #ff00ff, 0 0 40px #00ffff; }
+            to { text-shadow: 0 0 40px #ffff00, 0 0 80px #ff00ff; }
+        }
+
+        .warning {
+            position: absolute;
+            bottom: 30px;
+            font-size: 0.9rem;
+            opacity: 0.6;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <h1>SURPRISE !</h1>
+    <p>Clique N'IMPORTE OÙ pour faire exploser encore plus de confettis !</p>
+    <canvas id="canvas"></canvas>
+    <div class="warning">Prépare-toi… Grok t'a piégé 😈</div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+        
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        let particles = [];
+
+        class Confetti {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.random() * 12 + 6;
+                this.speedX = Math.random() * 12 - 6;
+                this.speedY = Math.random() * -18 - 10;
+                this.gravity = 0.18;
+                this.color = `hsl(${Math.random() * 360}, 100%, 65%)`;
+                this.rotation = Math.random() * 360;
+                this.rotationSpeed = Math.random() * 14 - 7;
+                this.opacity = 1;
+                this.shape = Math.random() > 0.5 ? 'rect' : 'circle';
+            }
+
+            update() {
+                this.speedY += this.gravity;
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.rotation += this.rotationSpeed;
+                this.opacity -= 0.008;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.opacity;
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation * Math.PI / 180);
+
+                ctx.fillStyle = this.color;
+                if (this.shape === 'rect') {
+                    ctx.fillRect(-this.size / 2, -this.size / 3, this.size, this.size * 0.6);
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.size / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+        }
+
+        function createExplosion(x, y, count) {
+            for (let i = 0; i < count; i++) {
+                particles.push(new Confetti(x, y));
+            }
+        }
+
+        function animate() {
+            // Effet de traînée magique
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+            ctx.fillRect(0, 0, width, height);
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.update();
+                p.draw();
+
+                if (p.y > height + 50 || p.opacity <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // Lancement initial EXPLOSIF
+        setTimeout(() => {
+            createExplosion(width / 2, height / 2.5, 420);
+            // Deuxième explosion décalée pour le WOW
+            setTimeout(() => createExplosion(width * 0.3, height / 2, 180), 180);
+            setTimeout(() => createExplosion(width * 0.7, height / 2, 180), 320);
+        }, 420);
+
+        // Clique = BOOM !
+        document.addEventListener('click', (e) => {
+            createExplosion(e.clientX, e.clientY, 220);
+            
+            // Effet bonus : petite explosion aléatoire à côté
+            if (Math.random() > 0.6) {
+                setTimeout(() => {
+                    createExplosion(e.clientX + (Math.random() * 200 - 100), 
+                                  e.clientY + (Math.random() * 150 - 50), 90);
+                }, 80);
+            }
+        });
+
+        // Petits confettis automatiques pour ne jamais s'arrêter
+        setInterval(() => {
+            if (Math.random() > 0.4) {
+                const x = Math.random() * width;
+                createExplosion(x, Math.random() * height * 0.3, 35);
+            }
+        }, 1100);
+
+        // Démarrage de l'animation
+        animate();
+
+        // Message secret dans la console (pour les curieux)
+        console.log('%c🎉 GROK t\'a bien eu hein ? Tu croyais que ce serait juste du texte ? 😏', 
+                    'color:#00ff00; font-family:monospace; font-size:14px;');
+    </script>
+</body>
+</html>
